@@ -23,6 +23,7 @@ const SCHEMA = [
   'CREATE TABLE IF NOT EXISTS likes(post_id INTEGER, user_id INTEGER, PRIMARY KEY(post_id, user_id))',
   'CREATE TABLE IF NOT EXISTS comments(id INTEGER PRIMARY KEY AUTOINCREMENT, post_id INTEGER, user_id INTEGER, text TEXT, created INTEGER)',
   'CREATE TABLE IF NOT EXISTS follows(follower_id INTEGER, followee_id INTEGER, PRIMARY KEY(follower_id, followee_id))',
+  'CREATE TABLE IF NOT EXISTS media(key TEXT PRIMARY KEY, ctype TEXT, data TEXT)',
 ];
 // Новые колонки в users (если их ещё нет)
 const ALTERS = [
@@ -59,6 +60,20 @@ async function getUser(db, request) {
   if (!token) return null;
   return db.prepare('SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ?')
     .bind(await sha(token)).first();
+}
+
+// Файл → base64 и обратно (для хранения фото в D1, если R2 не подключён)
+function toB64(buf) {
+  const u8 = new Uint8Array(buf);
+  let out = '';
+  for (let i = 0; i < u8.length; i += 0x8000) out += String.fromCharCode(...u8.subarray(i, i + 0x8000));
+  return btoa(out);
+}
+function fromB64(s) {
+  const bin = atob(s);
+  const u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  return u8;
 }
 
 const mediaUrl = (k) => `/api/s/media?key=${encodeURIComponent(k)}`;
@@ -107,29 +122,33 @@ export async function onRequest({ request, env, params }) {
     if (a === 'media') {
       const key = sp.get('key') || '';
       if (!/^(post|avatar)\/\d+\/[a-f0-9]+\.(jpg|png|webp|gif)$/.test(key)) return json({ error: 'Плохой ключ' }, 400);
-      if (!env.MEDIA) return json({ error: 'Не подключено хранилище R2 (привязка MEDIA)' }, 500);
-      const obj = await env.MEDIA.get(key);
-      if (!obj) return json({ error: 'Нет файла' }, 404);
-      return new Response(obj.body, {
-        headers: {
-          'content-type': obj.httpMetadata?.contentType || 'image/jpeg',
-          'cache-control': 'public, max-age=31536000, immutable',
-        },
-      });
+      const cache = 'public, max-age=31536000, immutable';
+      if (env.MEDIA) {
+        const obj = await env.MEDIA.get(key);
+        if (!obj) return json({ error: 'Нет файла' }, 404);
+        return new Response(obj.body, { headers: { 'content-type': obj.httpMetadata?.contentType || 'image/jpeg', 'cache-control': cache } });
+      }
+      const row = await db.prepare('SELECT ctype, data FROM media WHERE key = ?').bind(key).first();
+      if (!row) return json({ error: 'Нет файла' }, 404);
+      return new Response(fromB64(row.data), { headers: { 'content-type': row.ctype, 'cache-control': cache } });
     }
 
     // ---- Загрузка картинки: тело запроса — сам файл ----
     if (a === 'upload') {
       if (!user) return json({ error: 'Нужен вход' }, 401);
-      if (!env.MEDIA) return json({ error: 'Не подключено хранилище R2 (привязка MEDIA)' }, 500);
       const type = (request.headers.get('content-type') || '').split(';')[0];
       const ext = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' }[type];
       if (!ext) return json({ error: 'Только JPG, PNG, WebP или GIF' }, 400);
       const buf = await request.arrayBuffer();
-      if (buf.byteLength > 5 * 1024 * 1024) return json({ error: 'Файл больше 5 МБ' }, 413);
+      const limit = env.MEDIA ? 5 * 1024 * 1024 : 1024 * 1024;
+      if (buf.byteLength > limit) return json({ error: env.MEDIA ? 'Файл больше 5 МБ' : 'Файл больше 1 МБ. Уменьшите фото.' }, 413);
       const kind = sp.get('kind') === 'avatar' ? 'avatar' : 'post';
       const key = `${kind}/${user.id}/${rnd(12)}.${ext}`;
-      await env.MEDIA.put(key, buf, { httpMetadata: { contentType: type } });
+      if (env.MEDIA) {
+        await env.MEDIA.put(key, buf, { httpMetadata: { contentType: type } });
+      } else {
+        await db.prepare('INSERT INTO media(key, ctype, data) VALUES(?, ?, ?)').bind(key, type, toB64(buf)).run();
+      }
       return json({ key });
     }
 
@@ -225,7 +244,10 @@ export async function onRequest({ request, env, params }) {
         db.prepare('DELETE FROM post_views WHERE post_id = ?').bind(id),
         db.prepare('DELETE FROM posts WHERE id = ?').bind(id),
       ]);
-      if (p.image_key && env.MEDIA) await env.MEDIA.delete(p.image_key);
+      if (p.image_key) {
+        if (env.MEDIA) await env.MEDIA.delete(p.image_key);
+        else await db.prepare('DELETE FROM media WHERE key = ?').bind(p.image_key).run();
+      }
       return json({ ok: true });
     }
 
