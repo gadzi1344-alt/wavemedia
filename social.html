@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Wave · Лента</title>
+<meta name="theme-color" content="#0a0a0a">
+<style>
+  :root{--bg:#0a0a0a;--side:#0e0e0e;--surface:#151515;--surface2:#1d1d1d;--line:#202020;--txt:#ededed;--muted:#8c8c8c;--dim:#5a5a5a;--ease:cubic-bezier(.2,.7,.2,1)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--txt);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
+  button,input,textarea{font:inherit;color:inherit;background:none;border:0;outline:none}
+  button{cursor:pointer}
+  textarea{resize:none}
+  .app{display:grid;grid-template-columns:240px 1fr;height:100%}
+
+  /* ---------- Боковая панель (компьютер) ---------- */
+  aside{background:var(--side);border-right:1px solid var(--line);padding:26px 16px;display:flex;flex-direction:column;gap:4px}
+  .brand{font-weight:800;font-size:20px;letter-spacing:-.4px;padding:4px 12px 26px}
+  .nav button{display:flex;align-items:center;gap:12px;width:100%;padding:11px 14px;border-radius:999px;color:#c4c4c4;font-size:14px;font-weight:500;text-align:left;transition:background .25s,color .25s}
+  .nav button:hover{background:var(--surface);color:#fff}
+  .nav button.active{background:#ffffff1c;color:#fff}
+  .nav svg,.tabbar svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .newbtn{margin-top:18px;padding:12px;border-radius:999px;background:var(--txt);color:#000;font-weight:700;font-size:14px;transition:transform .25s var(--ease)}
+  .newbtn:hover{transform:translateY(-1px)}
+
+  /* ---------- Основная колонка ---------- */
+  main{overflow-y:auto;padding:28px 0 60px;min-width:0;animation:enter .45s var(--ease) both}
+  @keyframes enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .col{width:min(620px,calc(100% - 48px));margin:0 auto}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:16px;margin-bottom:14px;transition:background .25s,border-color .25s}
+  .card[data-open]{cursor:pointer}
+  .card[data-open]:hover{background:var(--surface2);border-color:#2a2a2a}
+  .pills{display:flex;gap:8px;margin-bottom:16px}
+  .pills button{padding:8px 18px;border-radius:999px;background:var(--surface);color:var(--muted);font-size:14px;font-weight:600;transition:background .25s,color .25s}
+  .pills button.on{background:var(--txt);color:#000}
+  .pill{padding:10px 20px;border-radius:999px;border:1px solid #2e2e2e;font-size:14px;font-weight:600;transition:background .25s}
+  .pill:hover{background:var(--surface)}
+  .pill.on{background:var(--txt);color:#000;border-color:var(--txt)}
+  .pill.danger{color:#d97070;border-color:#3a2222}
+  .sub{color:var(--muted);font-size:13px}
+  .center{text-align:center;padding:30px 0}
+  h2{font-size:24px;font-weight:800;letter-spacing:-.5px;margin-bottom:6px}
+  .section{font-size:16px;font-weight:700;margin:22px 0 12px}
+  .more{display:flex;justify-content:center;margin:10px 0 6px}
+
+  /* ---------- Аватары, галочка, значки ---------- */
+  .av{width:44px;height:44px;border-radius:50%;background-size:cover;background-position:center;display:grid;place-items:center;font-weight:700;font-size:17px;color:#fff;flex:none;overflow:hidden}
+  .av.sm{width:38px;height:38px;font-size:15px}
+  .av.xl{width:120px;height:120px;font-size:44px;box-shadow:0 20px 50px #000a}
+  .who{min-width:0;flex:1}
+  .nm{font-weight:700;font-size:15px;display:inline-flex;align-items:center;gap:4px;cursor:pointer}
+  .nm:hover{text-decoration:underline;text-underline-offset:3px}
+  .vf{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;background:#fff;color:#000;font-size:10px;font-weight:800;margin-left:4px}
+  .bd{font-size:14px;margin-left:2px}
+  .tm{display:block;color:var(--dim);font-size:12px;margin-top:2px}
+  .ph-head{display:flex;align-items:center;gap:12px}
+  .x{width:30px;height:30px;border-radius:50%;color:var(--dim);font-size:20px;transition:background .2s,color .2s}
+  .x:hover{background:var(--surface2);color:#d97070}
+
+  /* ---------- Пост ---------- */
+  .txt{font-size:15px;line-height:1.5;margin:12px 0;white-space:pre-wrap;word-break:break-word}
+  .pimg{display:block;width:100%;max-height:520px;object-fit:cover;border-radius:16px;margin-top:10px;background:var(--surface2)}
+  .acts2{display:flex;gap:6px;margin-top:12px;color:var(--muted);font-size:13px}
+  .acts2 button,.acts2 span{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;transition:background .25s,color .25s}
+  .acts2 button:hover{background:var(--surface2);color:#fff}
+  .acts2 button.on{color:#f25f7a}
+  .acts2 button.on svg{fill:currentColor}
+  .acts2 svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+
+  /* ---------- Композер ---------- */
+  .comp textarea{width:100%;min-height:88px;font-size:15px;line-height:1.5;padding:4px 2px}
+  .comp textarea::placeholder{color:var(--dim)}
+  .comp-row{display:flex;align-items:center;gap:10px;margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
+  .attach{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:999px;background:var(--surface2);color:var(--muted);font-size:13px;cursor:pointer;transition:color .25s}
+  .attach:hover{color:#fff}
+  .attach input{display:none}
+  .thumb{position:relative;margin-top:12px;display:inline-block}
+  .thumb img{width:120px;height:120px;object-fit:cover;border-radius:14px}
+  .thumb button{position:absolute;top:-6px;right:-6px;width:24px;height:24px;border-radius:50%;background:#000;border:1px solid #333;font-size:14px}
+  .grow{flex:1}
+
+  /* ---------- Профиль ---------- */
+  .prof{display:flex;gap:22px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
+  .prof .ti{min-width:0;flex:1}
+  .prof h2{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .stats{display:flex;gap:22px;margin:14px 0;font-size:14px}
+  .stats b{font-size:17px;margin-right:4px}
+  .bio{color:#bdbdbd;font-size:14px;line-height:1.5;white-space:pre-wrap}
+  .prof .acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .avatar-pick{position:relative;cursor:pointer}
+  .avatar-pick input{display:none}
+  .avatar-pick:hover .av{filter:brightness(.8)}
+
+  /* ---------- Поиск и админка ---------- */
+  .field{width:100%;padding:14px 18px;border-radius:14px;background:var(--surface);border:1px solid var(--line);font-size:15px;transition:border-color .25s}
+  .field:focus{border-color:#3a3a3a}
+  .field::placeholder{color:var(--dim)}
+  .urow{display:flex;align-items:center;gap:12px;padding:12px;border-radius:16px;background:var(--surface);border:1px solid var(--line);margin-bottom:10px;flex-wrap:wrap}
+  .urow .who{min-width:140px}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{padding:6px 10px;border-radius:999px;border:1px solid #2e2e2e;font-size:14px;transition:background .2s,border-color .2s}
+  .chip.on{background:#ffffff1c;border-color:#fff}
+  .switch{padding:7px 14px;border-radius:999px;border:1px solid #2e2e2e;font-size:13px;font-weight:600;transition:background .2s}
+  .switch.on{background:#fff;color:#000;border-color:#fff}
+
+  /* ---------- Вход и регистрация ---------- */
+  .auth{max-width:380px;margin:40px auto;display:flex;flex-direction:column;gap:12px}
+  .auth .field{padding:13px 16px}
+
+  /* ---------- Нижняя панель (телефон) ---------- */
+  .tabbar{display:none}
+  .toast{position:fixed;top:18px;right:18px;z-index:40;max-width:340px;background:var(--surface2);border:1px solid #2a2a2a;padding:12px 16px;border-radius:12px;font-size:13px;display:none}
+
+  @media (max-width:760px){
+    .app{grid-template-columns:1fr}
+    aside{display:none}
+    main{padding:18px 0 150px}
+    .col{width:calc(100% - 28px)}
+    .card{padding:14px;border-radius:18px}
+    .tabbar{display:flex;position:fixed;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom,0px) + 10px);height:66px;padding:6px;justify-content:space-around;align-items:center;background:#111111f2;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid #2a2a2a;border-radius:24px;box-shadow:0 18px 40px #000b;z-index:22}
+    .tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#7d7d7d;font-size:10px;font-weight:600;transition:color .3s}
+    .tabbar .ic{width:50px;height:30px;border-radius:999px;display:grid;place-items:center;transition:background .35s var(--ease)}
+    .tabbar button.active{color:#fff}
+    .tabbar button.active .ic{background:#ffffff1f}
+    .tabbar .mid .ic{width:46px;height:46px;background:var(--txt);color:#000}
+    .tabbar .mid svg{stroke:#000}
+    .toast{top:calc(env(safe-area-inset-top,0px) + 12px);left:12px;right:12px;max-width:none}
+    .prof{flex-direction:column;text-align:center}
+    .prof h2{justify-content:center}
+    .prof .acts{justify-content:center}
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside>
+    <div class="brand">Wave</div>
+    <nav class="nav" id="nav">
+      <button data-go="feed"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/></svg>Лента</button>
+      <button data-go="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Поиск</button>
+      <button data-go="profile"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Профиль</button>
+    </nav>
+    <button class="newbtn" id="newBtn">+ Новый пост</button>
+  </aside>
+
+  <main id="main"></main>
+</div>
+
+<nav class="tabbar" id="tabbar">
+  <button data-go="feed"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/></svg></span><span>Лента</span></button>
+  <button data-go="search"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></span><span>Поиск</span></button>
+  <button class="mid" id="tabNew"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span><span>Пост</span></button>
+  <button data-go="profile"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></span><span>Профиль</span></button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const BADGE = { star: '⭐', fire: '🔥', heart: '💜', cat: '🐱', crown: '👑', flower: '🌸', sparkle: '✨', bunny: '🐰' };
+const HEART = '<svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-9.6-9.2C.9 8.2 2.8 4.5 6.6 4.5c2.3 0 3.8 1.3 5.4 3.1 1.6-1.8 3.1-3.1 5.4-3.1 3.8 0 5.7 3.7 4.2 6.8-2.1 4.6-9.6 9.2-9.6 9.2z"/></svg>';
+const COMMENT = '<svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.5 7.2L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>';
+const EYE = '<svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+
+let me = null;
+let route = { name: 'feed', tab: 'all' };
+let feedBefore = null;
+let pendingImg = '';
+let adminUsers = [], adminBadges = {};
+
+const hue = (s) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 0);
+const av = (u, cls = 'av') => u.avatar
+  ? `<div class="${cls}" style="background-image:url('${esc(u.avatar)}')"></div>`
+  : `<div class="${cls}" style="background:linear-gradient(135deg,hsl(${hue(u.name)} 60% 50%),hsl(${hue(u.name) + 50} 60% 30%))">${esc(u.name[0].toUpperCase())}</div>`;
+const verify = (u) => u.verified ? '<span class="vf" title="Подтверждённый аккаунт">✓</span>' : '';
+const badges = (u) => (u.badges || []).map((b) => `<span class="bd" title="${esc(BADGE[b] ? b : '')}">${BADGE[b] || ''}</span>`).join('');
+const ago = (ts) => {
+  const d = Math.max(0, Date.now() / 1000 - ts);
+  if (d < 60) return 'только что';
+  if (d < 3600) return Math.floor(d / 60) + ' мин назад';
+  if (d < 86400) return Math.floor(d / 3600) + ' ч назад';
+  return new Date(ts * 1000).toLocaleDateString('ru-RU');
+};
+
+async function api(path, body) {
+  const r = await fetch(path, body === undefined ? {} : { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || 'Ошибка ' + r.status);
+  return d;
+}
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => (t.style.display = 'none'), 3200);
+}
+async function upload(file, kind) {
+  const r = await fetch('/api/s/upload?kind=' + kind, { method: 'POST', headers: { 'content-type': file.type }, body: file });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || 'Не удалось загрузить');
+  return d.key;
+}
+
+// ---------- Маршруты ----------
+function go(r) {
+  route = r;
+  render();
+}
+function setActive() {
+  const key = route.name === 'profile' || route.name === 'admin' ? 'profile' : route.name === 'post' ? 'feed' : route.name;
+  $$('#nav button, #tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.go === key));
+}
+async function render() {
+  setActive();
+  try {
+    if (route.name === 'feed') await renderFeed();
+    else if (route.name === 'post') await renderPost(route.id);
+    else if (route.name === 'profile') await renderProfile(route.user);
+    else if (route.name === 'search') renderSearch();
+    else if (route.name === 'admin') await renderAdmin();
+  } catch (e) {
+    $('#main').innerHTML = `<div class="col"><p class="sub center">${esc(e.message)}</p></div>`;
+  }
+}
+
+// ---------- Композер ----------
+function composer() {
+  if (!me) return `<div class="card center"><p class="sub">Войдите, чтобы писать посты</p><button class="pill on" data-go="profile" style="margin-top:12px">Войти</button></div>`;
+  return `<div class="card comp" id="comp">
+    <textarea id="ptext" maxlength="1000" placeholder="Что нового?"></textarea>
+    <div id="pthumb"></div>
+    <div class="comp-row">
+      <label class="attach">📷 Фото<input type="file" id="pfile" accept="image/*"></label>
+      <span class="grow"></span>
+      <button class="pill on" id="publish">Опубликовать</button>
+    </div>
+  </div>`;
+}
+
+// ---------- Лента ----------
+function postCard(p) {
+  return `<article class="card" data-open="${p.id}">
+    <div class="ph-head">
+      ${av(p.author, 'av sm')}
+      <div class="who"><span class="nm" data-user="${esc(p.author.name)}">${esc(p.author.name)}${verify(p.author)}${badges(p.author)}</span><span class="tm">${ago(p.created)}</span></div>
+      ${p.can ? `<button class="x" data-del="${p.id}" title="Удалить">×</button>` : ''}
+    </div>
+    ${p.text ? `<p class="txt">${esc(p.text)}</p>` : ''}
+    ${p.image ? `<img class="pimg" src="${esc(p.image)}" loading="lazy" alt="">` : ''}
+    <div class="acts2">
+      <button data-like="${p.id}" class="${p.liked ? 'on' : ''}">${HEART}<b>${p.likes}</b></button>
+      <span>${COMMENT}${p.comments}</span>
+      <span>${EYE}${p.views}</span>
+    </div>
+  </article>`;
+}
+
+async function renderFeed() {
+  const tab = route.tab || 'all';
+  $('#main').innerHTML = `<div class="col">
+    <h2>Лента</h2>
+    <div class="pills" style="margin-top:14px"><button data-tab="all" class="${tab === 'all' ? 'on' : ''}">Все</button><button data-tab="follow" class="${tab === 'follow' ? 'on' : ''}">Подписки</button></div>
+    ${composer()}
+    <div id="feed"></div>
+    <div class="more" id="moreBox"></div>
+  </div>`;
+  feedBefore = null;
+  await loadFeed();
+}
+
+async function loadFeed() {
+  const q = `tab=${route.tab || 'all'}${feedBefore ? '&before=' + feedBefore : ''}`;
+  try {
+    const { posts } = await api('/api/s/feed?' + q);
+    if (!posts.length && !feedBefore) {
+      $('#feed').innerHTML = `<p class="sub center">${route.tab === 'follow' ? 'Подпишитесь на людей, чтобы видеть их посты' : 'Пока пусто. Напишите первый пост!'}</p>`;
+    } else {
+      $('#feed').insertAdjacentHTML('beforeend', posts.map(postCard).join(''));
+    }
+    feedBefore = posts.length ? posts[posts.length - 1].id : feedBefore;
+    $('#moreBox').innerHTML = posts.length >= 20 ? '<button class="pill" data-more>Показать ещё</button>' : '';
+  } catch (e) {
+    $('#feed').innerHTML = `<p class="sub center">${esc(e.message)}</p>`;
+  }
+}
+
+// ---------- Пост ----------
+async function renderPost(id) {
+  const { post, comments } = await api('/api/s/post?id=' + id);
+  $('#main').innerHTML = `<div class="col">
+    <button class="pill" data-go="feed" style="margin-bottom:14px">← Назад</button>
+    ${postCard(post).replace(`data-open="${post.id}"`, '')}
+    <h2 class="section">Комментарии · ${comments.length}</h2>
+    ${comments.map((c) => `<div class="card" style="padding:12px 14px">
+      <div class="ph-head">${av(c.author, 'av sm')}<div class="who"><span class="nm" data-user="${esc(c.author.name)}">${esc(c.author.name)}${verify(c.author)}${badges(c.author)}</span><span class="tm">${ago(c.created)}</span></div></div>
+      <p class="txt" style="margin:8px 0 0">${esc(c.text)}</p></div>`).join('') || '<p class="sub">Комментариев пока нет</p>'}
+    <div class="card comp" style="margin-top:14px">
+      ${me ? `<textarea id="ctext" maxlength="500" placeholder="Ваш комментарий"></textarea>
+      <div class="comp-row"><span class="grow"></span><button class="pill on" data-comment="${post.id}">Отправить</button></div>`
+      : '<p class="sub">Войдите, чтобы комментировать</p>'}
+    </div>
+  </div>`;
+}
+
+// ---------- Профиль ----------
+async function renderProfile(name) {
+  if (!name && !me) {
+    $('#main').innerHTML = `<div class="col">${authForm()}</div>`;
+    return;
+  }
+  const target = name || me.name;
+  const { user, stats, following, isMe, posts } = await api('/api/s/profile?name=' + encodeURIComponent(target));
+  const canAdmin = isMe && me && me.admin;
+  $('#main').innerHTML = `<div class="col">
+    <div class="card" style="padding:22px">
+      <div class="prof">
+        ${isMe ? `<label class="avatar-pick" title="Сменить фото">${av(user, 'av xl')}<input type="file" id="afile" accept="image/*"></label>` : av(user, 'av xl')}
+        <div class="ti">
+          <h2>${esc(user.name)}${verify(user)} ${badges(user)}</h2>
+          <div class="stats"><span><b>${stats.posts}</b>постов</span><span><b>${stats.followers}</b>подписчиков</span><span><b>${stats.following}</b>подписок</span></div>
+          <p class="bio">${esc(user.bio) || (isMe ? '<span class="sub">Расскажите о себе</span>' : '')}</p>
+          <div class="acts">
+            ${isMe ? `<button class="pill" id="editBio">Изменить описание</button>
+              <button class="pill" id="logout">Выйти</button>
+              ${canAdmin ? '<button class="pill on" data-go="admin">Админ-панель</button>' : ''}`
+              : me ? `<button class="pill ${following ? '' : 'on'}" data-follow="${esc(user.name)}">${following ? 'Отписаться' : 'Подписаться'}</button>` : ''}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="feed">${posts.map(postCard).join('') || '<p class="sub center">Постов пока нет</p>'}</div>
+  </div>`;
+}
+
+function authForm() {
+  return `<div class="auth card" style="padding:22px" id="authBox">
+    <h2 id="authTitle">Вход</h2>
+    <p class="sub" id="authHint">Введите имя и пароль</p>
+    <input class="field" id="aname" placeholder="Имя" autocomplete="username">
+    <input class="field" id="apass" type="password" placeholder="Пароль" autocomplete="current-password">
+    <input class="field" id="acode" placeholder="Код администратора (только для админа)" style="display:none">
+    <button class="pill on" id="authGo">Войти</button>
+    <button class="pill" id="authSwitch">Нет аккаунта? Регистрация</button>
+  </div>`;
+}
+
+// ---------- Поиск ----------
+function renderSearch() {
+  $('#main').innerHTML = `<div class="col">
+    <h2>Поиск</h2>
+    <input class="field" id="sq" placeholder="Люди и посты" style="margin:14px 0 18px" autocomplete="off">
+    <div id="sres"></div>
+  </div>`;
+  runSearch('');
+}
+let searchTimer;
+async function runSearch(q) {
+  try {
+    const { users, posts } = await api('/api/s/search?q=' + encodeURIComponent(q));
+    $('#sres').innerHTML = `
+      ${users.length ? `<h2 class="section">Люди</h2>${users.map((u) => `
+        <div class="urow"><div class="ph-head" style="flex:1;min-width:0">${av(u, 'av sm')}<div class="who"><span class="nm" data-user="${esc(u.name)}">${esc(u.name)}${verify(u)}${badges(u)}</span><span class="tm">${esc(u.bio)}</span></div></div></div>`).join('')}` : ''}
+      ${posts.length ? `<h2 class="section">Посты</h2>${posts.map(postCard).join('')}` : ''}
+      ${!users.length && !posts.length && q ? '<p class="sub center">Ничего не найдено</p>' : ''}`;
+  } catch (e) { $('#sres').innerHTML = `<p class="sub">${esc(e.message)}</p>`; }
+}
+
+// ---------- Админ-панель: галочка и значки ----------
+async function renderAdmin() {
+  if (!(me && me.admin)) return go({ name: 'profile' });
+  const { users, badges: cat } = await api('/api/s/admin_users?q=');
+  adminUsers = users;
+  adminBadges = cat;
+  $('#main').innerHTML = `<div class="col">
+    <button class="pill" data-go="profile" style="margin-bottom:14px">← В профиль</button>
+    <h2>Админ-панель</h2>
+    <p class="sub" style="margin:6px 0 16px">Выдавайте галочку и значки. Изменения сохраняются сразу.</p>
+    <input class="field" id="aq" placeholder="Поиск пользователя" style="margin-bottom:14px">
+    <div id="alist">${adminUsers.map(adminRow).join('')}</div>
+  </div>`;
+}
+function adminRow(u) {
+  return `<div class="urow" data-admin="${esc(u.name)}">
+    <div class="ph-head" style="min-width:140px">${av(u, 'av sm')}<div class="who"><span class="nm">${esc(u.name)}${verify(u)}</span></div></div>
+    <button class="switch ${u.verified ? 'on' : ''}" data-verify="${esc(u.name)}">${u.verified ? 'Галочка: да' : 'Галочка: нет'}</button>
+    <div class="chips">${Object.keys(adminBadges).map((k) => `<button class="chip ${u.badges.includes(k) ? 'on' : ''}" data-badge="${k}" data-for="${esc(u.name)}" title="${esc(adminBadges[k].label)}">${adminBadges[k].emoji}</button>`).join('')}</div>
+  </div>`;
+}
+async function saveAdmin(name) {
+  const u = adminUsers.find((x) => x.name === name);
+  if (!u) return;
+  await api('/api/s/admin_set', { name, verified: u.verified, badges: u.badges });
+  const row = $(`[data-admin="${CSS.escape(name)}"]`);
+  if (row) row.outerHTML = adminRow(u);
+}
+
+// ---------- Действия (делегирование) ----------
+document.addEventListener('click', async (e) => {
+  const t = (sel) => e.target.closest(sel);
+  try {
+    if (t('[data-go]')) return go({ name: t('[data-go]').dataset.go, tab: 'all', user: null });
+    if (t('#newBtn') || t('#tabNew')) { go({ name: 'feed', tab: 'all' }); setTimeout(() => $('#ptext')?.focus(), 150); return; }
+    if (t('[data-tab]')) { route.tab = t('[data-tab]').dataset.tab; return renderFeed(); }
+    if (t('[data-more]')) return loadFeed();
+    if (t('#publish')) {
+      const text = $('#ptext').value.trim();
+      if (!text && !pendingImg) return toast('Напишите текст или добавьте фото');
+      await api('/api/s/post_create', { text, image_key: pendingImg });
+      pendingImg = '';
+      return renderFeed();
+    }
+    if (t('[data-del]')) {
+      e.stopPropagation();
+      if (!confirm('Удалить пост?')) return;
+      await api('/api/s/post_delete', { id: Number(t('[data-del]').dataset.del) });
+      return render();
+    }
+    if (t('[data-like]')) {
+      e.stopPropagation();
+      if (!me) return toast('Войдите, чтобы ставить лайки');
+      const btn = t('[data-like]');
+      const r = await api('/api/s/like', { id: Number(btn.dataset.like) });
+      btn.classList.toggle('on', r.liked);
+      btn.querySelector('b').textContent = r.likes;
+      return;
+    }
+    if (t('[data-comment]')) {
+      const text = $('#ctext').value.trim();
+      if (!text) return toast('Напишите комментарий');
+      await api('/api/s/comment', { post_id: Number(t('[data-comment]').dataset.comment), text });
+      return renderPost(Number(t('[data-comment]').dataset.comment));
+    }
+    if (t('[data-user]')) {
+      e.stopPropagation();
+      return go({ name: 'profile', user: t('[data-user]').dataset.user });
+    }
+    if (t('[data-follow]')) {
+      if (!me) return toast('Войдите, чтобы подписываться');
+      await api('/api/s/follow', { name: t('[data-follow]').dataset.follow });
+      return renderProfile(t('[data-follow]').dataset.follow);
+    }
+    if (t('[data-open]')) return go({ name: 'post', id: Number(t('[data-open]').dataset.open) });
+    if (t('#editBio')) {
+      const bio = prompt('Описание профиля (до 200 символов)', me.bio || '');
+      if (bio === null) return;
+      await api('/api/s/profile_update', { bio });
+      return renderProfile();
+    }
+    if (t('#logout')) {
+      await api('/api/u/logout', {});
+      me = null;
+      return go({ name: 'feed', tab: 'all' });
+    }
+    if (t('[data-verify]')) {
+      const name = t('[data-verify]').dataset.verify;
+      const u = adminUsers.find((x) => x.name === name);
+      u.verified = !u.verified;
+      return saveAdmin(name);
+    }
+    if (t('[data-badge]')) {
+      const b = t('[data-badge]');
+      const u = adminUsers.find((x) => x.name === b.dataset.for);
+      const k = b.dataset.badge;
+      u.badges = u.badges.includes(k) ? u.badges.filter((x) => x !== k) : [...u.badges, k].slice(0, 8);
+      return saveAdmin(u.name);
+    }
+    if (t('#authSwitch')) {
+      const reg = $('#authTitle').textContent === 'Вход';
+      $('#authTitle').textContent = reg ? 'Регистрация' : 'Вход';
+      $('#authHint').textContent = reg ? 'Придумайте имя и пароль (минимум 6 символов)' : 'Введите имя и пароль';
+      $('#authGo').textContent = reg ? 'Зарегистрироваться' : 'Войти';
+      $('#authSwitch').textContent = reg ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Регистрация';
+      $('#acode').style.display = reg ? 'block' : 'none';
+      return;
+    }
+    if (t('#authGo')) {
+      const reg = $('#authTitle').textContent === 'Регистрация';
+      const body = { name: $('#aname').value.trim(), password: $('#apass').value };
+      if (reg) body.code = $('#acode').value;
+      const r = await api(reg ? '/api/u/register' : '/api/u/login', body);
+      me = r.user;
+      toast('Добро пожаловать, ' + me.name);
+      return go({ name: 'feed', tab: 'all' });
+    }
+  } catch (err) {
+    toast(err.message);
+  }
+});
+
+document.addEventListener('change', async (e) => {
+  try {
+    if (e.target.id === 'pfile') {
+      const f = e.target.files[0];
+      if (!f) return;
+      pendingImg = await upload(f, 'post');
+      $('#pthumb').innerHTML = `<div class="thumb"><img src="/api/s/media?key=${encodeURIComponent(pendingImg)}" alt=""><button data-rmimg>×</button></div>`;
+    }
+    if (e.target.id === 'afile') {
+      const f = e.target.files[0];
+      if (!f) return;
+      const key = await upload(f, 'avatar');
+      await api('/api/s/profile_update', { avatar_key: key });
+      toast('Аватарка обновлена');
+      return renderProfile();
+    }
+  } catch (err) { toast(err.message); }
+});
+
+document.addEventListener('click', (e) => {
+  if (e.target.closest('[data-rmimg]')) {
+    pendingImg = '';
+    $('#pthumb').innerHTML = '';
+  }
+});
+
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'sq') {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => runSearch(e.target.value.trim()), 250);
+  }
+  if (e.target.id === 'aq') { /* поиск в админке: фильтр по уже загруженным */ }
+});
+
+// ---------- Старт ----------
+(async () => {
+  try { me = (await api('/api/u/me')).user; } catch (_) { me = null; }
+  if (me && !me.admin) me.admin = false;
+  go({ name: 'feed', tab: 'all' });
+})();
+</script>
+</body>
+</html>
