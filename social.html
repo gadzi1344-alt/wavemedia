@@ -131,19 +131,53 @@
     .prof h2{justify-content:center}
     .prof .acts{justify-content:center}
   }
+  /* ---------- Боковая панель: только иконки (компьютер) ---------- */
+  @media (min-width:761px){
+    .app{grid-template-columns:84px 1fr}
+    aside{padding:24px 0;align-items:center;gap:10px;overflow:visible}
+    .brand{padding:0 0 18px;font-size:22px;text-align:center;width:100%}
+    .nav{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%}
+    .nav button{width:52px;height:52px;padding:0;justify-content:center;gap:0;border-radius:18px}
+    .nav button.active{background:#ffffff1c;box-shadow:inset 0 0 0 1px #ffffff14}
+    .nav svg{width:22px;height:22px}
+    .newbtn{width:52px;height:52px;padding:0;margin-top:14px;border-radius:18px;display:grid;place-items:center}
+    .newbtn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
+  }
+
+  /* ---------- Анимации ---------- */
+  @keyframes cardIn{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+  @keyframes likePop{0%{transform:scale(.6)}55%{transform:scale(1.35)}100%{transform:scale(1)}}
+  #feed .card,.comp{animation:cardIn .55s var(--ease) both}
+  #feed .card:nth-child(2){animation-delay:55ms}
+  #feed .card:nth-child(3){animation-delay:110ms}
+  #feed .card:nth-child(4){animation-delay:165ms}
+  #feed .card:nth-child(5){animation-delay:220ms}
+  #feed .card:nth-child(6){animation-delay:275ms}
+  .card{transition:transform .35s var(--ease),background .25s,border-color .25s,box-shadow .35s}
+  .card[data-open]:hover{transform:translateY(-2px);box-shadow:0 18px 40px #0008}
+  .card:hover .av{transform:scale(1.05)}
+  .av{transition:transform .35s var(--ease)}
+  .pimg{transition:transform .6s var(--ease)}
+  .card:hover .pimg{transform:scale(1.015)}
+  .acts2 button.on svg{animation:likePop .45s var(--ease)}
+  .pills button{transition:background .3s var(--ease),color .3s}
+  .pill,.newbtn,.nav button,.pills button{transition:background .25s,color .25s,transform .2s var(--ease)}
+  .pill:active,.newbtn:active,.nav button:active,.pills button:active,.x:active{transform:scale(.94)}
+  .tabbar button:active .ic{transform:scale(.92)}
+  .tabbar .ic{transition:background .35s var(--ease),transform .25s var(--ease)}
 </style>
 </head>
 <body>
 
 <div class="app">
   <aside>
-    <div class="brand">Wave</div>
+    <div class="brand">W</div>
     <nav class="nav" id="nav">
-      <button data-go="feed"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/></svg>Лента</button>
-      <button data-go="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Поиск</button>
-      <button data-go="profile"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Профиль</button>
+      <button data-go="feed" title="Лента"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/></svg></button>
+      <button data-go="search" title="Поиск"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button>
+      <button data-go="profile" title="Профиль"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></button>
     </nav>
-    <button class="newbtn" id="newBtn">+ Новый пост</button>
+    <button class="newbtn" id="newBtn" title="Новый пост"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
   </aside>
 
   <main id="main"></main>
@@ -265,8 +299,8 @@ async function renderFeed() {
   const tab = route.tab || 'all';
   $('#main').innerHTML = `<div class="col">
     <h2>Лента</h2>
-    <div class="pills" style="margin-top:14px"><button data-tab="all" class="${tab === 'all' ? 'on' : ''}">Все</button><button data-tab="follow" class="${tab === 'follow' ? 'on' : ''}">Подписки</button></div>
-    ${composer()}
+    <div class="pills" style="margin-top:14px"><button data-tab="all" class="${tab === 'all' ? 'on' : ''}">Для вас</button><button data-tab="follow" class="${tab === 'follow' ? 'on' : ''}">Подписки</button></div>
+    ${tab === 'all' ? composer() : ''}
     <div id="feed"></div>
     <div class="more" id="moreBox"></div>
   </div>`;
